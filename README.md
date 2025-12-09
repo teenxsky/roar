@@ -5,9 +5,14 @@
 
 ## Требования
 
+### Для локальной разработки:
 - MacOS
 - Homebrew
 - Python >=3.13
+
+### Для Docker:
+- Docker
+- Docker Compose
 
 ## Установка для разработки
 
@@ -73,4 +78,23 @@ tailscale ip -4
 
 ```bash
 make run-app
+```
+
+## Запуск через Docker
+
+### Быстрый старт
+
+```bash
+docker-compose up --build
+# or
+docker-compose up -d
+# or
+docker-compose logs -f
+```
+
+### Запуск с тремя участниками
+
+```bash
+# Запустить все 3 пира (включая опциональный третий)
+docker-compose --profile full up --build
 ```

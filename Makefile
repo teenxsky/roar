@@ -36,3 +36,30 @@ lint: ## Проверить стиль кода (линтинг)
 .PHONY: fix
 fix: ## Исправить ошибки стиля (форматировать код)
 	@./venv/bin/ruff check --fix --unsafe-fixes --config=ruff.toml
+
+
+#--------------- КОМАНДЫ ДЛЯ DOCKER ---------------#
+
+.PHONY: build
+build: ## Собрать Docker образ
+	@docker-compose up -d --build
+
+.PHONY: up
+up: ## Запустить контейнеры (2 пира)
+	@docker-compose up -d --remove-orphans
+
+.PHONY: up-full
+docker-up-full: ## Запустить контейнеры (3 пира)
+	@docker-compose --profile full up -d
+
+.PHONY: down
+docker-down: ## Остановить и удалить контейнеры
+	@docker-compose down
+
+.PHONY: logs
+docker-logs: ## Просмотр логов всех контейнеров
+	@docker-compose logs -f
+
+.PHONY: clean
+docker-clean: ## Очистить все Docker ресурсы проекта
+	@docker-compose down -v --rmi all
