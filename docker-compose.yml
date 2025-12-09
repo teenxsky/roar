@@ -1,0 +1,62 @@
+name: 'roar'
+
+services:
+  peer1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: roar-peer1
+    stdin_open: true
+    tty: true
+    environment:
+      - USERNAME=peer1
+    networks:
+      - roar-network
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./src:/app/src
+      - ./.env:/app/.env
+    restart: unless-stopped
+
+  peer2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: roar-peer2
+    stdin_open: true
+    tty: true
+    environment:
+      - USERNAME=peer2
+    networks:
+      - roar-network
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./src:/app/src
+      - ./.env:/app/.env
+    restart: unless-stopped
+
+  roar-peer3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: roar-peer3
+    stdin_open: true
+    tty: true
+    environment:
+      - USERNAME=peer3
+    networks:
+      - roar-network
+    ports:
+      - "5002:5000"
+    volumes:
+      - ./src:/app/src
+      - ./.env:/app/.env
+    restart: unless-stopped
+    profiles:
+      - full
+
+networks:
+  roar-network:
+    driver: bridge
