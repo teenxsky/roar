@@ -5,6 +5,7 @@ from loguru import logger
 
 from src.app import VoiceP2PChat
 from src.cli import prompt_username
+from src.config import config
 from src.logging import setup_logging
 
 setup_logging()
@@ -13,7 +14,10 @@ setup_logging()
 def main() -> None:
     """Точка входа в приложение."""
 
-    username = prompt_username()
+    username = config.USERNAME
+    if not username:
+        username = prompt_username()
+
     chat = VoiceP2PChat(username)
 
     chat_thread = threading.Thread(target=chat.start, daemon=True)

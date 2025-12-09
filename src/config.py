@@ -8,6 +8,9 @@ load_dotenv()
 class Config:
     """Конфигурация приложения."""
 
+    # User Configuration
+    USERNAME: str = str(os.getenv('USERNAME', ''))
+
     # Network Configuration
     TCP_HOST: str = str(os.getenv('TCP_HOST'))
     TCP_PORT: int = int(os.getenv('TCP_PORT'))
