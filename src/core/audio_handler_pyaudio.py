@@ -67,42 +67,8 @@ class AudioHandler:
         self.out_stream.write(data)
 
     def melody(self, stop_event) -> None:
-        duration = 0.8
-        notes = [
-            415.30,
-            415.30,
-            415.30,
-            369.99,
-            493.88,
-            440.0,
-            415.30,
-            369.99,
-            329.63,
-            369.99,
-            415.30,
-            415.30,
-            415.30,
-            369.99,
-            493.88,
-            440.0,
-            415.30,
-            369.99,
-            329.63,
-            369.99,
-            415.30,
-            493.88,
-            415.30,
-            415.30,
-            415.30,
-            415.30,
-            415.30,
-            369.99,
-            415.30,
-            369.99,
-            415.30,
-            329.63,
-            329.63,
-        ]
+        duration = 0.5
+        notes = [440, 554, 659, 554]
 
         while not stop_event.is_set():
             for freq in notes:
@@ -111,7 +77,7 @@ class AudioHandler:
 
                 frames = array.array('h')
                 for i in range(int(self.RATE * duration)):
-                    sample = int(32767 * 0.05 * math.sin(2 * math.pi * freq * i / self.RATE))
+                    sample = int(32767 * 0.1 * math.sin(2 * math.pi * freq * i / self.RATE))
                     frames.append(sample)
 
                 self.out_stream.write(frames.tobytes())
