@@ -6,8 +6,8 @@ def prompt_username() -> str:
     if len(sys.argv) > 1:
         username = sys.argv[1]
     else:
-        username = input("Введите ваше имя: ").strip()
+        username = input('Введите ваше имя: ').strip()
         if not username:
-            username = "Anonymous"
+            username = 'Anonymous'
 
     return username

@@ -32,7 +32,7 @@ class PeerDiscovery:
         self.running = False
         self.local_ip = self.get_local_ip()
 
-        logger.debug(f"PeerDiscovery инициализирован для {username} на {self.local_ip}")
+        logger.debug(f'PeerDiscovery инициализирован для {username} на {self.local_ip}')
 
     def get_local_ip(self) -> str:
         """Получить локальный IP адрес."""
@@ -43,7 +43,7 @@ class PeerDiscovery:
             s.close()
             return ip
         except Exception as e:
-            logger.warning(f"Не удалось определить IP, использую 127.0.0.1: {e}")
+            logger.warning(f'Не удалось определить IP, использую 127.0.0.1: {e}')
             return '127.0.0.1'
 
     def start(self) -> None:
@@ -59,30 +59,32 @@ class PeerDiscovery:
         cleanup_thread = threading.Thread(target=self._cleanup_loop, daemon=True)
         cleanup_thread.start()
 
-        logger.success("PeerDiscovery запущен")
+        logger.success('PeerDiscovery запущен')
 
     def stop(self) -> None:
         """Остановить процесс обнаружения."""
         self.running = False
-        logger.info("PeerDiscovery остановлен")
+        logger.info('PeerDiscovery остановлен')
 
     def _announce_loop(self) -> None:
         """Периодически отправлять broadcast с информацией о себе."""
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-        message = json.dumps({
-            "username": self.username,
-            "ip": self.local_ip,
-            "tcp_port": self.tcp_port,
-        })
+        message = json.dumps(
+            {
+                'username': self.username,
+                'ip': self.local_ip,
+                'tcp_port': self.tcp_port,
+            },
+        )
 
         while self.running:
             try:
                 sock.sendto(message.encode(), ('<broadcast>', self.broadcast_port))
-                logger.debug(f"Отправлен broadcast: {self.username}")
+                logger.debug(f'Отправлен broadcast: {self.username}')
             except Exception as e:
-                logger.error(f"Ошибка при отправке broadcast: {e}")
+                logger.error(f'Ошибка при отправке broadcast: {e}')
 
             time.sleep(config.BROADCAST_INTERVAL)
 
@@ -95,7 +97,7 @@ class PeerDiscovery:
         sock.bind(('', self.broadcast_port))
         sock.settimeout(1.0)
 
-        logger.debug(f"Прослушивание broadcast на порту {self.broadcast_port}")
+        logger.debug(f'Прослушивание broadcast на порту {self.broadcast_port}')
 
         while self.running:
             try:
@@ -107,18 +109,18 @@ class PeerDiscovery:
                     continue
 
                 if peer_ip not in self.peers:
-                    logger.success(f"Обнаружен новый пир: {peer_info['username']} ({peer_ip})")
+                    logger.success(f'Обнаружен новый пир: {peer_info["username"]} ({peer_ip})')
 
                 self.peers[peer_ip] = {
-                    "username": peer_info['username'],
-                    "tcp_port": peer_info['tcp_port'],
-                    "last_seen": time.time(),
+                    'username': peer_info['username'],
+                    'tcp_port': peer_info['tcp_port'],
+                    'last_seen': time.time(),
                 }
 
             except TimeoutError:
                 continue
             except Exception as e:
-                logger.error(f"Ошибка при приеме broadcast: {e}")
+                logger.error(f'Ошибка при приеме broadcast: {e}')
 
         sock.close()
 
@@ -135,7 +137,7 @@ class PeerDiscovery:
             for peer_ip in to_remove:
                 username = self.peers[peer_ip]['username']
                 del self.peers[peer_ip]
-                logger.warning(f"Пир отключился: {username} ({peer_ip})")
+                logger.warning(f'Пир отключился: {username} ({peer_ip})')
 
             time.sleep(config.CLEANUP_INTERVAL)
 

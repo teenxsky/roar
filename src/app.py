@@ -27,7 +27,7 @@ class VoiceP2PChat:
 
         self.network.set_audio_callback(self._on_audio_received)
 
-        logger.debug(f"VoiceP2PChat инициализирован для {username}")
+        logger.debug(f'VoiceP2PChat инициализирован для {username}')
 
     def _on_audio_received(self, audio_data: bytes, peer_ip: str) -> None:
         """
@@ -52,7 +52,7 @@ class VoiceP2PChat:
         # Начать запись аудио
         self.audio.start_recording()
 
-        logger.success(f"Чат запущен! Пользователь: {self.username}")
+        logger.success(f'Чат запущен! Пользователь: {self.username}')
 
         # Главный цикл
         try:
@@ -74,7 +74,7 @@ class VoiceP2PChat:
                 time.sleep(config.AUDIO_SEND_INTERVAL)
 
         except KeyboardInterrupt:
-            logger.info("Получен сигнал остановки (Ctrl+C)")
+            logger.info('Получен сигнал остановки (Ctrl+C)')
         finally:
             self.stop()
 
@@ -85,35 +85,35 @@ class VoiceP2PChat:
 
         for peer_ip, peer_info in discovered_peers.items():
             if peer_ip not in connected_peers:
-                logger.debug(f"Попытка подключения к {peer_info['username']} ({peer_ip})")
+                logger.debug(f'Попытка подключения к {peer_info["username"]} ({peer_ip})')
                 self.network.connect_to_peer(peer_ip, peer_info['tcp_port'])
 
     def stop(self) -> None:
         """Остановить чат."""
         self.running = False
 
-        logger.info("Остановка чата...")
+        logger.info('Остановка чата...')
 
         self.audio.stop_recording()
         self.network.stop()
         self.discovery.stop()
 
-        logger.success("Чат остановлен")
+        logger.success('Чат остановлен')
 
     def print_status(self) -> None:
         """Вывести текущий статус."""
         discovered = self.discovery.get_peers()
         connected = self.network.get_connected_peers()
 
-        logger.info("=== Статус чата ===")
-        logger.info(f"Пользователь: {self.username}")
-        logger.info(f"Обнаружено пиров: {len(discovered)}")
-        logger.info(f"Подключенных пиров: {len(connected)}")
+        logger.info('=== Статус чата ===')
+        logger.info(f'Пользователь: {self.username}')
+        logger.info(f'Обнаружено пиров: {len(discovered)}')
+        logger.info(f'Подключенных пиров: {len(connected)}')
 
         if discovered:
-            logger.info("Обнаруженные пиры:")
+            logger.info('Обнаруженные пиры:')
             for peer_ip, info in discovered.items():
-                status = "подключен" if peer_ip in connected else "не подключен"
-                logger.info(f"  - {info['username']} ({peer_ip}) - {status}")
+                status = 'подключен' if peer_ip in connected else 'не подключен'
+                logger.info(f'  - {info["username"]} ({peer_ip}) - {status}')
         else:
-            logger.info("Пиры не обнаружены")
+            logger.info('Пиры не обнаружены')

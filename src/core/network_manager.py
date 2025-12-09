@@ -26,7 +26,7 @@ class NetworkManager:
         self.audio_callback = None  # Функция для обработки полученного аудио
         self.lock = threading.Lock()
 
-        logger.debug(f"NetworkManager инициализирован на порту {tcp_port}")
+        logger.debug(f'NetworkManager инициализирован на порту {tcp_port}')
 
     def set_audio_callback(self, callback: Callable[[bytes, str], None]) -> None:
         """
@@ -44,7 +44,7 @@ class NetworkManager:
         accept_thread = threading.Thread(target=self._accept_connections, daemon=True)
         accept_thread.start()
 
-        logger.success("NetworkManager запущен")
+        logger.success('NetworkManager запущен')
 
     def stop(self) -> None:
         """Остановить все соединения."""
@@ -54,11 +54,11 @@ class NetworkManager:
             for peer_ip, conn in self.connections.items():
                 with contextlib.suppress(Exception):
                     conn.close()
-                    logger.debug(f"Закрыто соединение с {peer_ip}")
+                    logger.debug(f'Закрыто соединение с {peer_ip}')
 
             self.connections.clear()
 
-        logger.info("NetworkManager остановлен")
+        logger.info('NetworkManager остановлен')
 
     def _accept_connections(self) -> None:
         """Принимать входящие TCP соединения."""
@@ -68,7 +68,7 @@ class NetworkManager:
         server_socket.listen(5)
         server_socket.settimeout(1.0)
 
-        logger.debug(f"Прослушивание TCP соединений на порту {self.tcp_port}")
+        logger.debug(f'Прослушивание TCP соединений на порту {self.tcp_port}')
 
         while self.running:
             try:
@@ -78,7 +78,7 @@ class NetworkManager:
                 with self.lock:
                     if peer_ip not in self.connections:
                         self.connections[peer_ip] = conn
-                        logger.success(f"Входящее соединение от {peer_ip}")
+                        logger.success(f'Входящее соединение от {peer_ip}')
 
                         receive_thread = threading.Thread(
                             target=self._receive_from_peer,
@@ -88,13 +88,13 @@ class NetworkManager:
                         receive_thread.start()
                     else:
                         conn.close()
-                        logger.debug(f"Соединение от {peer_ip} уже существует")
+                        logger.debug(f'Соединение от {peer_ip} уже существует')
 
             except TimeoutError:
                 continue
             except Exception as e:
                 if self.running:
-                    logger.error(f"Ошибка при приеме соединения: {e}")
+                    logger.error(f'Ошибка при приеме соединения: {e}')
 
         server_socket.close()
 
@@ -108,7 +108,7 @@ class NetworkManager:
         """
         with self.lock:
             if peer_ip in self.connections:
-                logger.debug(f"Соединение с {peer_ip} уже существует")
+                logger.debug(f'Соединение с {peer_ip} уже существует')
                 return True
 
         try:
@@ -119,7 +119,7 @@ class NetworkManager:
             with self.lock:
                 self.connections[peer_ip] = sock
 
-            logger.success(f"Подключено к {peer_ip}:{peer_port}")
+            logger.success(f'Подключено к {peer_ip}:{peer_port}')
 
             # Запустить поток для приема данных
             receive_thread = threading.Thread(
@@ -132,7 +132,7 @@ class NetworkManager:
             return True
 
         except Exception as e:
-            logger.error(f"Не удалось подключиться к {peer_ip}:{peer_port}: {e}")
+            logger.error(f'Не удалось подключиться к {peer_ip}:{peer_port}: {e}')
             return False
 
     def _receive_from_peer(self, conn: socket.socket, peer_ip: str) -> None:
@@ -143,7 +143,7 @@ class NetworkManager:
             conn: Socket соединения
             peer_ip: IP адрес пира
         """
-        logger.debug(f"Начат прием данных от {peer_ip}")
+        logger.debug(f'Начат прием данных от {peer_ip}')
 
         while self.running:
             try:
@@ -161,7 +161,7 @@ class NetworkManager:
                     self.audio_callback(audio_data, peer_ip)
 
             except Exception as e:
-                logger.error(f"Ошибка при приеме от {peer_ip}: {e}")
+                logger.error(f'Ошибка при приеме от {peer_ip}: {e}')
                 break
 
         with self.lock:
@@ -171,7 +171,7 @@ class NetworkManager:
         with contextlib.suppress(builtins.BaseException):
             conn.close()
 
-        logger.warning(f"Соединение с {peer_ip} закрыто")
+        logger.warning(f'Соединение с {peer_ip} закрыто')
 
     def _recv_exact(self, conn: socket.socket, n: int) -> bytes | None:
         """
@@ -212,12 +212,12 @@ class NetworkManager:
                 try:
                     conn.sendall(packet)
                 except Exception as e:
-                    logger.error(f"Ошибка отправки к {peer_ip}: {e}")
+                    logger.error(f'Ошибка отправки к {peer_ip}: {e}')
                     disconnected.append(peer_ip)
 
             for peer_ip in disconnected:
                 del self.connections[peer_ip]
-                logger.warning(f"Удалено разорванное соединение с {peer_ip}")
+                logger.warning(f'Удалено разорванное соединение с {peer_ip}')
 
     def get_connected_peers(self) -> list[str]:
         """Получить список подключенных пиров."""

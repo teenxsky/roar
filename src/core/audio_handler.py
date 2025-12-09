@@ -17,14 +17,14 @@ class AudioHandler:
         self.recording = False
         logger.warning('Запись остановлена (заглушка)')
 
-    def get_audio_chunk(self) -> bytes|None:
+    def get_audio_chunk(self) -> bytes | None:
         """
         Возвращает chunk из потока записи.
 
         Returns:
             bytes или None
         """
-        return b"suba_bratik"
+        return b'suba_bratik'
 
     def play_audio(self, data: bytes, peer_ip: str | None = None) -> None:
         """
@@ -35,4 +35,4 @@ class AudioHandler:
             data: полученные данные
             peer_ip: ip пира от кого пришли данные
         """
-        logger.debug(f"Воспроизведение аудио от {peer_ip} ({len(data)} байт)")
+        logger.debug(f'Воспроизведение аудио от {peer_ip} ({len(data)} байт)')
