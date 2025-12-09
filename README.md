@@ -21,6 +21,7 @@ source venv/bin/activate
 ### 2. Установить зависимости
 
 ```bash
+brew install portaudio
 make install
 ```
 
