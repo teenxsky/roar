@@ -17,7 +17,6 @@ exclude = [
     ".tox",
     ".venv",
     ".vscode",
-    "idea",
     "__pypackages__",
     "_build",
     "buck-out",
@@ -25,82 +24,54 @@ exclude = [
     "dist",
     "node_modules",
     "site-packages",
-    "venv"
+    "venv",
+    "migrations",
 ]
 
-line-length = 100
+line-length = 110
 indent-width = 4
 
 [lint]
-select = [
-    "E", # Error
-    "W", # Pycodestyle
-    "I", # Isort,
-    "C", # Complexity
-    "UP", # Unused imports and variables
-    "B", # Bugbear
-    "E4", "E7", "E9", # Flake8
-    "ASYNC", # Flake8-async
-    "TD", # Catch invalid todo annotation
-    "F", # Pyflakes
-    "C90", # McCabe complexity
-    "N", # pep8-naming
-    "D", # Pydocstyle
-    "ANN", # Pytype annotations
-    "S", # Bandit
-    "COM", # Commas
-    "C4", # Comprehensions
-    "ISC", # Implicit string concat
-    "PIE", # Unnecessary code
-    "T20", # Catch prints
-    "RSE", # Checks raise statements
-    "RET", # Checks return statements
-    "SLF", # Self checks
-    "SIM", # Simplificator
-    "PTH", # Pathlib checks
-    "ERA", # Checks for commented out code
-]
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`) codes by default.
+# Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
+# McCabe complexity (`C901`) by default.
+select = ["E", "W", "I", "C", "UP", "B", "E4", "E7", "E9", "F"]
+ignore = ["F403", "C901"]
 
-ignore = [
-    "D105", # Missing docstring in magic method
-    "D107", # Missing docstring in __init__
-    "D211", # No blank lines allowed before class docstring
-    "F403", # Unable to detect undefined name
-    "D401", # First line should be in imperative mood
-    "D104", # Missing docstring in public package
-    "D100", # Missing docstring in public module
-    "D212", # Multi-line docstring summary should start at the first line
-    "D106", # Missing docstring in public nested class
-    "D205", # 1 blank line required between summary line and description
-    "D200", # One-line docstring should fit on one line with quotes
-    "D202", # No blank lines allowed after function docstring
-    "C901", # McCabe complexity
-    "ANN401", # typing.Any are disallowed in `**kwargs
-    "ANN002", # Missing type annotation for *args
-    "ANN003", # Missing type annotation for **kwargs
-    "S112", # `try`-`except`-`continue` detected, consider logging the exception,
-]
-
+# Allow fix for all enabled rules (when `--fix`) is provided.
 fixable = ["ALL"]
 unfixable = []
 
+# Allow unused variables when underscore-prefixed.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 [format]
+# Like Black, use double quotes for strings.
 quote-style = "single"
+
+# Like Black, indent with spaces, rather than tabs.
 indent-style = "space"
+
+# Like Black, respect magic trailing commas.
 skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
 line-ending = "auto"
 
+# Enable auto-formatting of code examples in docstrings. Markdown,
+# reStructuredText code/literal blocks and doctests are all supported.
+#
+# This is currently disabled by default, but it is planned for this
+# to be opt-out in the future.
 docstring-code-format = true
+
+# Set the line length limit used when formatting code snippets in
+# docstrings.
+#
+# This only has an effect when the `docstring-code-format` setting is
+# enabled.
 docstring-code-line-length = "dynamic"
 
 [lint.mccabe]
+# Unlike Flake8, default to a complexity level of 10.
 max-complexity = 10
-
-[lint.flake8-quotes]
-docstring-quotes = "single"
-
-[lint.pydocstyle]
-convention = "pep257"
-ignore-decorators = ["typing.overload"]

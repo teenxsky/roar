@@ -1,9 +1,9 @@
-from loguru import logger
-import pyaudio
-import time
 import array
-import threading
 import math
+import time
+
+import pyaudio
+from loguru import logger
 
 
 class AudioHandler:
@@ -67,53 +67,71 @@ class AudioHandler:
         self.out_stream.write(data)
 
     def melody(self, stop_event) -> None:
-        duration = 0.8
         notes = [
-            415.30,
-            415.30,
-            415.30,
-            369.99,
-            493.88,
-            440.0,
-            415.30,
-            369.99,
-            329.63,
-            369.99,
-            415.30,
-            415.30,
-            415.30,
-            369.99,
-            493.88,
-            440.0,
-            415.30,
-            369.99,
-            329.63,
-            369.99,
-            415.30,
-            493.88,
-            415.30,
-            415.30,
-            415.30,
-            415.30,
-            415.30,
-            369.99,
-            415.30,
-            369.99,
-            415.30,
-            329.63,
-            329.63,
+            (261.63, 0.3),  # C4
+            (293.66, 0.3),  # D4
+            (329.63, 0.3),  # E4
+            (349.23, 0.3),  # F4
+            (392.00, 0.3),  # G4
+            (440.00, 0.3),  # A4
+            (493.83, 0.3),  # B4
+            (523.25, 0.3),  # С5
+            (261.63, 0.3),  # C4
+            (293.66, 0.3),  # D4
+            (329.63, 0.3),  # E4
+            (349.23, 0.3),  # F4
+            (392.00, 0.3),  # G4
+            (440.00, 0.3),  # A4
+            (493.83, 0.3),  # B4
+            (523.25, 0.3),  # С5
+            (392.00, 0.3),  # G4
+            (440.00, 0.3),  # A4
+            (493.83, 0.3),  # B4
+            (523.25, 0.3),  # С5
+            (587.33, 0.3),  # D5
+            (659.26, 0.3),  # E5
+            (698.46, 0.3),  # F5
+            (783.99, 0.3),  # G5
+            (392.00, 0.3),  # G4
+            (440.00, 0.3),  # A4
+            (493.83, 0.3),  # B4
+            (523.25, 0.3),  # С5
+            (587.33, 0.3),  # D5
+            (659.26, 0.3),  # E5
+            (698.46, 0.3),  # F5
+            (783.99, 0.3),  # G5
+            (293.66, 0.8),  # D4
+            (261.63, 0.8),  # C4
+            (293.66, 0.8),  # D4
+            (261.63, 0.8),  # C4
+            (329.63, 0.3),  # E4
+            (293.66, 0.3),  # D4
+            (261.63, 0.6),  # C4
+            (246.94, 0.8),  # B3
+            (246.94, 0.6),  # B3
+            (261.63, 0.3),  # C4
+            (220.00, 1.5),  # A3
         ]
 
+        # volume = 0.08
+        volume = 0
+
         while not stop_event.is_set():
-            for freq in notes:
+            for freq, duration in notes:
                 if stop_event.is_set():
                     break
 
                 frames = array.array('h')
-                for i in range(int(self.RATE * duration)):
-                    sample = int(32767 * 0.05 * math.sin(2 * math.pi * freq * i / self.RATE))
+                samples_count = int(self.RATE * duration)
+
+                for i in range(samples_count):
+                    t = i / samples_count
+                    envelope = t / 0.1 if t < 0.1 else (1 - (t - 0.9) / 0.1) if t > 0.9 else 1
+                    envelope = max(0.0, min(1.0, envelope))
+
+                    sample = int(32767 * volume * envelope * math.sin(2 * math.pi * freq * i / self.RATE))
                     frames.append(sample)
 
                 self.out_stream.write(frames.tobytes())
 
-            time.sleep(0.1)
+            time.sleep(0.2)

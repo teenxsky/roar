@@ -84,7 +84,7 @@ class PeerDiscovery:
                 sock.sendto(message.encode(), ('<broadcast>', self.broadcast_port))
                 logger.debug(f'Отправлен broadcast: {self.username}')
             except Exception as e:
-                # logger.error(f'Ошибка при отправке broadcast: {e}')
+                logger.error(f'Ошибка при отправке broadcast: {e}')
                 pass
 
             time.sleep(config.BROADCAST_INTERVAL)
