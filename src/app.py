@@ -6,6 +6,7 @@ from src.config import config
 from src.core.audio_handler import AudioHandler
 from src.core.network_manager import NetworkManager
 from src.core.peer_discovery import PeerDiscovery
+import threading
 
 
 class VoiceP2PChat:
@@ -24,6 +25,9 @@ class VoiceP2PChat:
         self.discovery = PeerDiscovery(username)
         self.network = NetworkManager()
         self.audio = AudioHandler()
+
+        self.waiting_music_stop = threading.Event()
+        self.waiting_thread = None
 
         self.network.set_audio_callback(self._on_audio_received)
 
@@ -51,6 +55,11 @@ class VoiceP2PChat:
 
         # Начать запись аудио
         self.audio.start_recording()
+
+        self.waiting_thread = threading.Thread(
+            target=self.audio.melody, args=(self.waiting_music_stop,), daemon=True
+        )
+        self.waiting_thread.start()
 
         logger.success(f'Чат запущен! Пользователь: {self.username}')
 

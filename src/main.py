@@ -1,24 +1,28 @@
+import curses
 import threading
 import time
 
 from loguru import logger
 
 from src.app import VoiceP2PChat
-from src.cli import prompt_username
+from src.cli import app
 from src.config import config
-from src.logging import setup_logging
 
-setup_logging()
+# setup_logging()
 
 
 def main() -> None:
     """Точка входа в приложение."""
 
-    username = config.USERNAME
-    if not username:
-        username = prompt_username()
+    curses.wrapper(app)
 
-    chat = VoiceP2PChat(username)
+    return
+
+    # username = config.USERNAME
+    # if not username:
+    #     username = prompt_username()
+
+    chat = VoiceP2PChat(config.USERNAME)
 
     chat_thread = threading.Thread(target=chat.start, daemon=True)
     chat_thread.start()
