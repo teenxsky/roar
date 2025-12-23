@@ -119,7 +119,7 @@ class NetworkManager:
             with self.lock:
                 self.connections[peer_ip] = sock
 
-            self.waiting_music_stop.set()
+            # self.waiting_music_stop.set()
 
             logger.success(f'Подключено к {peer_ip}:{peer_port}')
 
