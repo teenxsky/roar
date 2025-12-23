@@ -131,7 +131,6 @@ class AudioHandler:
                 for _ in range(5):
                     self.playback_queue.get_nowait()
                 self.playback_queue.put_nowait(data)
-                logger.warning(f'Очередь переполнена, удалено 5 старых фреймов')
             except:
                 # Если и это не помогло - просто пропускаем фрейм
                 logger.warning(f'Пропущен аудио фрейм от {peer_ip}')

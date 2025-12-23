@@ -11,7 +11,11 @@ from src.config import config
 
 
 class NetworkManager:
-    """Управление TCP соединениями для передачи аудио."""
+    """Управление TCP соединениями для передачи аудио и текстовых сообщений."""
+
+    # Типы пакетов
+    PACKET_TYPE_AUDIO = 0x01
+    PACKET_TYPE_TEXT = 0x02
 
     def __init__(self, tcp_port: int | None = None) -> None:
         """
@@ -24,6 +28,7 @@ class NetworkManager:
         self.connections = {}  # {peer_ip: socket}
         self.running = False
         self.audio_callback = None  # Функция для обработки полученного аудио
+        self.text_callback = None  # Функция для обработки текстовых сообщений
         self.lock = threading.Lock()
 
         logger.debug(f'NetworkManager инициализирован на порту {tcp_port}')
@@ -36,6 +41,15 @@ class NetworkManager:
             callback: Функция, принимающая (data, peer_ip)
         """
         self.audio_callback = callback
+
+    def set_text_callback(self, callback: Callable[[str, str], None]) -> None:
+        """
+        Установить callback для обработки текстовых сообщений.
+
+        Args:
+            callback: Функция, принимающая (message, peer_ip)
+        """
+        self.text_callback = callback
 
     def start(self) -> None:
         """Запустить сервер для приема соединений."""
@@ -139,7 +153,7 @@ class NetworkManager:
 
     def _receive_from_peer(self, conn: socket.socket, peer_ip: str) -> None:
         """
-        Принимать аудио данные от пира.
+        Принимать данные (аудио и текст) от пира.
 
         Args:
             conn: Socket соединения
@@ -149,18 +163,38 @@ class NetworkManager:
 
         while self.running:
             try:
+                # Читаем тип пакета (1 байт)
+                type_data = self._recv_exact(conn, 1)
+                if not type_data:
+                    break
+
+                packet_type = struct.unpack('!B', type_data)[0]
+
+                # Читаем размер данных (4 байта)
                 size_data = self._recv_exact(conn, 4)
                 if not size_data:
                     break
 
                 size = struct.unpack('!I', size_data)[0]
 
-                audio_data = self._recv_exact(conn, size)
-                if not audio_data:
+                # Читаем сами данные
+                data = self._recv_exact(conn, size)
+                if not data:
                     break
 
-                if self.audio_callback:
-                    self.audio_callback(audio_data, peer_ip)
+                # Обрабатываем в зависимости от типа
+                if packet_type == self.PACKET_TYPE_AUDIO:
+                    if self.audio_callback:
+                        self.audio_callback(data, peer_ip)
+                elif packet_type == self.PACKET_TYPE_TEXT:
+                    if self.text_callback:
+                        try:
+                            message = data.decode('utf-8')
+                            self.text_callback(message, peer_ip)
+                        except UnicodeDecodeError as e:
+                            logger.error(f'Ошибка декодирования текста от {peer_ip}: {e}')
+                else:
+                    logger.warning(f'Неизвестный тип пакета: {packet_type} от {peer_ip}')
 
             except Exception as e:
                 logger.error(f'Ошибка при приеме от {peer_ip}: {e}')
@@ -204,8 +238,39 @@ class NetworkManager:
         if not audio_data:
             return
 
-        size = len(audio_data)
-        packet = struct.pack('!I', size) + audio_data
+        self._send_packet(self.PACKET_TYPE_AUDIO, audio_data)
+
+    def send_text(self, message: str) -> None:
+        """
+        Отправить текстовое сообщение всем подключенным пирам.
+
+        Args:
+            message: Текстовое сообщение
+        """
+        if not message:
+            return
+
+        try:
+            data = message.encode('utf-8')
+            self._send_packet(self.PACKET_TYPE_TEXT, data)
+            logger.debug(f'Текст отправлен: {message}')
+        except Exception as e:
+            logger.error(f'Ошибка кодирования сообщения: {e}')
+
+    def _send_packet(self, packet_type: int, data: bytes) -> None:
+        """
+        Отправить пакет всем подключенным пирам.
+
+        Args:
+            packet_type: Тип пакета (AUDIO или TEXT)
+            data: Данные для отправки
+        """
+        if not data:
+            return
+
+        size = len(data)
+        # Формат: 1 байт тип + 4 байта размер + данные
+        packet = struct.pack('!B', packet_type) + struct.pack('!I', size) + data
 
         with self.lock:
             disconnected = []

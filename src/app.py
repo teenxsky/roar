@@ -21,6 +21,7 @@ class VoiceP2PChat:
         """
         self.username = username
         self.running = False
+        self.text_message_callback = None  # Callback для UI при получении текста
 
         self.discovery = PeerDiscovery(username)
         self.network = NetworkManager()
@@ -30,8 +31,18 @@ class VoiceP2PChat:
         self.waiting_thread = None
 
         self.network.set_audio_callback(self._on_audio_received)
+        self.network.set_text_callback(self._on_text_received)
 
         logger.debug(f'VoiceP2PChat инициализирован для {username}')
+
+    def set_text_message_callback(self, callback) -> None:
+        """
+        Установить callback для обработки полученных текстовых сообщений.
+
+        Args:
+            callback: Функция, принимающая (username, message)
+        """
+        self.text_message_callback = callback
 
     def _on_audio_received(self, audio_data: bytes, peer_ip: str) -> None:
         """
@@ -42,6 +53,35 @@ class VoiceP2PChat:
             peer_ip: IP адрес отправителя
         """
         self.audio.play_audio(audio_data, peer_ip)
+
+    def _on_text_received(self, message: str, peer_ip: str) -> None:
+        """
+        Callback для обработки полученного текстового сообщения.
+
+        Args:
+            message: Текстовое сообщение
+            peer_ip: IP адрес отправителя
+        """
+        # Получаем имя пользователя по IP
+        peers = self.discovery.get_peers()
+        username = peers.get(peer_ip, {}).get('username', peer_ip)
+
+        logger.info(f'{username}: {message}')
+
+        # Вызываем callback для UI если установлен
+        if self.text_message_callback:
+            self.text_message_callback(username, message)
+
+    def send_message(self, message: str) -> None:
+        """
+        Отправить текстовое сообщение всем подключенным пирам.
+
+        Args:
+            message: Текстовое сообщение
+        """
+        if message and message.strip():
+            self.network.send_text(message)
+            logger.info(f'Вы: {message}')
 
     def start(self) -> None:
         """Запустить чат."""

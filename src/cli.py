@@ -335,6 +335,10 @@ def app(stdscr: window):
 
             if key in (curses.KEY_ENTER, ord('\n')):
                 if chat_input.strip():
+                    # Отправляем сообщение через чат
+                    if chat:
+                        chat.send_message(chat_input)
+                    # Добавляем свое сообщение в интерфейс
                     messages.append(f'{name}: {chat_input}')
                 chat_input = ''
             elif key in (curses.KEY_BACKSPACE, 127, 8):
@@ -370,6 +374,12 @@ def app(stdscr: window):
                 )
                 if name:
                     chat = VoiceP2PChat(name)
+
+                    # Устанавливаем callback для получения сообщений
+                    def on_message_received(username, message):
+                        messages.append(f'{username}: {message}')
+
+                    chat.set_text_message_callback(on_message_received)
 
                     chat_thread = threading.Thread(
                         target=chat.start,
