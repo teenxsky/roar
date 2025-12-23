@@ -9,22 +9,23 @@ from loguru import logger
 
 
 class AudioHandler:
-    """Безопасный обработчик аудио с защитой от buffer overflow."""
+    """Безопасный обработчик аудио с защитой от buffer overflow и jitter buffer."""
 
-    # Увеличенный размер буфера для предотвращения overflow
-    CHUNK = 2048  # было 1024
+    CHUNK = 4096
     FORMAT = pyaudio.paInt16
     CHANNELS = 1
     RATE = 44100
 
-    # Максимальный размер очереди воспроизведения (в чанках)
-    PLAYBACK_QUEUE_SIZE = 10
+    PLAYBACK_QUEUE_SIZE = 50
+
+    JITTER_BUFFER_MIN = 8
 
     def __init__(self) -> None:
         self.recording: bool = False
         self.running: bool = True
+        self.playback_started: bool = False
 
-        # Очередь для безопасного воспроизведения
+        # Очередь для безопасного воспроизведения с jitter buffer
         self.playback_queue: Queue = Queue(maxsize=self.PLAYBACK_QUEUE_SIZE)
 
         # Инициализация PyAudio
@@ -35,7 +36,7 @@ class AudioHandler:
         try:
             self.pa = pyaudio.PyAudio()
 
-            # Входной поток (запись с микрофона)
+            # Входной поток (запись с микрофона) - увеличен буфер
             self.input_stream = self.pa.open(
                 format=self.FORMAT,
                 channels=self.CHANNELS,
@@ -45,7 +46,7 @@ class AudioHandler:
                 stream_callback=None,  # blocking mode для стабильности
             )
 
-            # Выходной поток (воспроизведение)
+            # Выходной поток (воспроизведение) - увеличен буфер
             self.output_stream = self.pa.open(
                 format=self.FORMAT,
                 channels=self.CHANNELS,
@@ -55,7 +56,10 @@ class AudioHandler:
                 stream_callback=None,  # blocking mode для стабильности
             )
 
-            logger.success('AudioHandler инициализирован (CHUNK=2048, безопасный режим)')
+            logger.success(
+                f'AudioHandler инициализирован (CHUNK={self.CHUNK}, '
+                f'QUEUE={self.PLAYBACK_QUEUE_SIZE}, JITTER={self.JITTER_BUFFER_MIN})'
+            )
 
         except Exception as e:
             logger.error(f'Ошибка инициализации AudioHandler: {e}')
@@ -99,7 +103,7 @@ class AudioHandler:
 
     def play_audio(self, data: bytes, peer_ip: str | None = None) -> None:
         """
-        Безопасное воспроизведение полученных данных через очередь.
+        Безопасное воспроизведение полученных данных через очередь с jitter buffer.
 
         Args:
             data: полученные аудио данные
@@ -111,28 +115,62 @@ class AudioHandler:
         try:
             # Пытаемся добавить в очередь (non-blocking)
             self.playback_queue.put_nowait(data)
-            logger.debug(f'Аудио добавлено в очередь от {peer_ip} ({len(data)} байт)')
+
+            queue_size = self.playback_queue.qsize()
+
+            # Логируем только важные события для производительности
+            if queue_size == self.JITTER_BUFFER_MIN and not self.playback_started:
+                logger.info(f'Jitter buffer заполняется: {queue_size}/{self.JITTER_BUFFER_MIN}')
+            elif queue_size % 20 == 0:
+                logger.debug(f'Очередь: {queue_size}/{self.PLAYBACK_QUEUE_SIZE} чанков')
+
         except:
-            # Очередь полна - удаляем старый фрейм и добавляем новый
+            # Очередь полна - удаляем 5 старых фреймов и добавляем новый
+            # Это предотвращает накопление задержки
             try:
-                self.playback_queue.get_nowait()  # удаляем старый
-                self.playback_queue.put_nowait(data)  # добавляем новый
-                logger.debug(f'Очередь переполнена, заменен старый фрейм на новый от {peer_ip}')
+                for _ in range(5):
+                    self.playback_queue.get_nowait()
+                self.playback_queue.put_nowait(data)
+                logger.warning(f'Очередь переполнена, удалено 5 старых фреймов')
             except:
                 # Если и это не помогло - просто пропускаем фрейм
-                logger.warning(f'Пропущен аудио фрейм от {peer_ip} - очередь переполнена')
+                logger.warning(f'Пропущен аудио фрейм от {peer_ip}')
 
     def _playback_loop(self) -> None:
         """
         Отдельный поток для безопасного воспроизведения аудио из очереди.
-        Предотвращает buffer overflow при записи в PyAudio stream.
+        Использует jitter buffer для компенсации нестабильности сети.
         """
-        logger.info('Поток воспроизведения запущен')
+        logger.info(f'Поток воспроизведения запущен с jitter buffer ({self.JITTER_BUFFER_MIN} чанков)')
 
         while self.running:
             try:
-                # Получаем данные из очереди с таймаутом
-                data = self.playback_queue.get(timeout=0.1)
+                # Jitter buffer: ждем минимального заполнения перед началом
+                if not self.playback_started:
+                    queue_size = self.playback_queue.qsize()
+                    if queue_size < self.JITTER_BUFFER_MIN:
+                        time.sleep(0.02)  # подождем накопления буфера
+                        continue
+                    else:
+                        self.playback_started = True
+                        logger.success(
+                            f'Jitter buffer готов ({queue_size} чанков), '
+                            f'начинаем плавное воспроизведение'
+                        )
+
+                # Получаем данные из очереди с коротким таймаутом
+                try:
+                    data = self.playback_queue.get(timeout=0.02)
+                except Empty:
+                    # Очередь опустела - сбрасываем флаг для повторного заполнения jitter buffer
+                    if self.playback_started:
+                        logger.warning(
+                            'Очередь опустела (сетевые задержки), '
+                            'пауза для накопления jitter buffer'
+                        )
+                        self.playback_started = False
+                    time.sleep(0.01)
+                    continue
 
                 if not self.output_stream:
                     continue
@@ -145,10 +183,12 @@ class AudioHandler:
                     if hasattr(e, 'errno'):
                         if e.errno == pyaudio.paOutputUnderflowed:
                             logger.debug('Output buffer underflow, пропуск фрейма')
+                        elif e.errno == pyaudio.paOutputOverflowed:
+                            logger.warning('Output buffer overflow, пропуск фрейма')
                         else:
-                            logger.warning(f'IOError при воспроизведении: {e}')
+                            logger.warning(f'OSError при воспроизведении: {e}')
                     else:
-                        logger.warning(f'IOError при воспроизведении: {e}')
+                        logger.warning(f'OSError при воспроизведении: {e}')
                     # НЕ бросаем исключение - просто пропускаем фрейм
                     continue
 
@@ -156,9 +196,6 @@ class AudioHandler:
                     logger.error(f'Ошибка при воспроизведении аудио: {e}')
                     continue
 
-            except Empty:
-                # Очередь пуста - это нормально, продолжаем ждать
-                continue
             except Exception as e:
                 logger.error(f'Ошибка в playback loop: {e}')
                 time.sleep(0.1)
@@ -207,7 +244,7 @@ class AudioHandler:
             (783.99, 0.2),  # G5
         ]
 
-        volume = 0
+        volume = 0  # отключена по умолчанию
 
         while not stop_event.is_set():
             for freq, duration in notes:
