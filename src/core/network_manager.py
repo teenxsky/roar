@@ -253,7 +253,7 @@ class NetworkManager:
         try:
             data = message.encode('utf-8')
             self._send_packet(self.PACKET_TYPE_TEXT, data)
-            logger.debug(f'Текст отправлен: {message}')
+            # НЕ логируем здесь - логирование происходит в app.py и cli.py
         except Exception as e:
             logger.error(f'Ошибка кодирования сообщения: {e}')
 

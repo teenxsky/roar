@@ -59,18 +59,22 @@ class VoiceP2PChat:
         Callback для обработки полученного текстового сообщения.
 
         Args:
-            message: Текстовое сообщение
+            message: Текстовое сообщение в формате "username: text"
             peer_ip: IP адрес отправителя
         """
-        # Получаем имя пользователя по IP
-        peers = self.discovery.get_peers()
-        username = peers.get(peer_ip, {}).get('username', peer_ip)
+        # Парсим сообщение: формат "username: text"
+        if ': ' in message:
+            username, text = message.split(': ', 1)
+        else:
+            # Fallback если формат неправильный
+            peers = self.discovery.get_peers()
+            username = peers.get(peer_ip, {}).get('username', peer_ip)
+            text = message
 
-        logger.info(f'{username}: {message}')
-
+        # НЕ логируем здесь - логи идут в UI через callback
         # Вызываем callback для UI если установлен
         if self.text_message_callback:
-            self.text_message_callback(username, message)
+            self.text_message_callback(username, text)
 
     def send_message(self, message: str) -> None:
         """
@@ -80,8 +84,10 @@ class VoiceP2PChat:
             message: Текстовое сообщение
         """
         if message and message.strip():
-            self.network.send_text(message)
-            logger.info(f'Вы: {message}')
+            # Отправляем сообщение с никнеймом в формате "username: message"
+            formatted_message = f'{self.username}: {message}'
+            self.network.send_text(formatted_message)
+            # НЕ логируем здесь - это делает CLI при добавлении в messages
 
     def start(self) -> None:
         """Запустить чат."""
