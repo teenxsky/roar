@@ -7,6 +7,7 @@ from curses import window
 from loguru import logger
 
 from src.app import VoiceP2PChat
+from src.config import config
 
 MODE_MENU = 0
 MODE_CHAT = 1
@@ -190,7 +191,8 @@ def draw_messages(stdscr: window, messages, y: int, x: int, h: int, w: int):
     visible = list(messages)[-limit:]
 
     for i, msg in enumerate(visible):
-        stdscr.addstr(y + i, x, ' ' + str(msg)[: (w - 3)])
+        stdscr.addstr(y + i, x + 1, msg[: (w - 1)])
+        stdscr.addstr(y + i, x + w, '|')
 
 
 def draw_input(stdscr: window, chat_input: str, y: int, x: int, w: int):
@@ -303,7 +305,7 @@ def app(stdscr: window):
     logger.add(
         lambda m: messages.append(m),
         format=('<level>{message}</level>'),
-        level='INFO',
+        level=config.LOG_LEVEL,
         enqueue=True,
     )
     chat_input = ''
