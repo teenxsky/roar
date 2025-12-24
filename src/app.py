@@ -102,10 +102,10 @@ class VoiceP2PChat:
         # Начать запись аудио
         self.audio.start_recording()
 
-        self.waiting_thread = threading.Thread(
-            target=self.audio.melody, args=(self.waiting_music_stop,), daemon=True
-        )
-        self.waiting_thread.start()
+        # self.waiting_thread = threading.Thread(
+        #     target=self.audio.melody, args=(self.waiting_music_stop,), daemon=True
+        # )
+        # self.waiting_thread.start()
 
         logger.success(f'Чат запущен! Пользователь: {self.username}')
 
